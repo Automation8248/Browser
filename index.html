@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lovora Web Browser</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1e1e1e; color: white; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: #2d2d2d; padding: 20px; border-radius: 8px; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #browser-ui { display: none; }
+        .address-bar { display: flex; gap: 10px; }
+        .address-bar input { flex: 1; }
+        .address-bar button { width: auto; }
+        #render-area { margin-top: 20px; border: 2px solid #555; min-height: 400px; background: white; text-align: center; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="title">Login to Lovora Browser</h2>
+    
+    <!-- Login Form -->
+    <div id="login-form">
+        <input type="text" id="username" placeholder="Username (e.g., admin)">
+        <input type="password" id="password" placeholder="Password (e.g., password123)">
+        <button onclick="login()">Login</button>
+        <p id="msg" style="color: yellow;"></p>
+    </div>
+
+    <!-- Browser UI -->
+    <div id="browser-ui">
+        <p>Session ID: <span id="sess-id" style="color:#4CAF50; font-size:12px;"></span></p>
+        <div class="address-bar">
+            <input type="text" id="url" placeholder="Enter URL (https://google.com)">
+            <button onclick="navigate()">Go</button>
+            <button onclick="closeSession()" style="background: red;">Close Session</button>
+        </div>
+        <p id="loading" style="display:none; color: yellow;">Loading webpage...</p>
+        
+        <!-- Render Area (We display screenshots because real iframes block third-party sites) -->
+        <div id="render-area">
+            <img id="browser-screen" src="" alt="Webpage render will appear here">
+        </div>
+    </div>
+</div>
+
+<script>
+    // Replace this with your actual Backend URL after hosting on Render/Railway
+    const API_BASE = "http://127.0.0.1:8000/api"; 
+    let apiKey = "";
+    let sessionId = "";
+
+    async function login() {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        const res = await fetch(`${API_BASE}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, password: p })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            apiKey = data.api_key;
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('title').innerText = "Lovora Cloud Browser";
+            startSession();
+        } else {
+            document.getElementById('msg').innerText = "Invalid Login!";
+        }
+    }
+
+    async function startSession() {
+        document.getElementById('msg').innerText = "Starting persistent browser session...";
+        const res = await fetch(`${API_BASE}/browser/start`, {
+            method: 'POST', headers: { 'x-api-key': apiKey }
+        });
+        const data = await res.json();
+        sessionId = data.session_id;
+        document.getElementById('sess-id').innerText = sessionId;
+        document.getElementById('msg').innerText = "";
+        document.getElementById('browser-ui').style.display = 'block';
+    }
+
+    async function navigate() {
+        const url = document.getElementById('url').value;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('browser-screen').src = "";
+        
+        const res = await fetch(`${API_BASE}/browser/${sessionId}/goto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+            body: JSON.stringify({ url: url })
+        });
+        
+        const data = await res.json();
+        document.getElementById('browser-screen').src = data.screenshot; // Show the browser screenshot
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    async function closeSession() {
+        await fetch(`${API_BASE}/browser/close/${sessionId}`, { method: 'POST', headers: { 'x-api-key': apiKey }});
+        alert("Session Closed");
+        location.reload();
+    }
+</script>
+</body>
+</html>
