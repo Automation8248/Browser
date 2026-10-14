@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lovora Cloud Browser</title>
-    <!-- Tailwind CSS for styling -->
+    <title>Lovora Cloud Browser | Advanced</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for Icons -->
+    <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -18,7 +18,7 @@
         .tab-inactive:hover { opacity: 1; }
     </style>
 </head>
-<body class="bg-gray-900 text-white h-screen flex flex-col overflow-hidden">
+<body class="bg-gray-900 text-white h-screen flex flex-col overflow-hidden" onload="checkAutoLogin()">
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="flex-1 flex items-center justify-center bg-gray-900 z-50">
@@ -27,15 +27,24 @@
                 <i class="fa-solid fa-earth-americas text-4xl text-blue-500 mr-3"></i>
                 <h2 class="text-2xl font-bold">Lovora Browser</h2>
             </div>
-            <div class="space-y-4">
+            
+            <div class="space-y-4" id="login-form">
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">User ID</label>
-                    <input type="text" id="username" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 transition" placeholder="Enter your ID">
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Standard Login</label>
+                    <input type="text" id="username" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 mb-2 focus:border-blue-500 transition" placeholder="User ID">
+                    <input type="password" id="password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:border-blue-500 transition" placeholder="Password">
                 </div>
+                
+                <div class="flex items-center text-gray-500 text-xs">
+                    <div class="flex-1 border-t border-gray-700"></div>
+                    <span class="px-2">OR BYPASS WITH API</span>
+                    <div class="flex-1 border-t border-gray-700"></div>
+                </div>
+
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Password</label>
-                    <input type="password" id="password" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 transition" placeholder="••••••••">
+                    <input type="text" id="api-key-input" class="w-full bg-gray-900 border border-gray-700 text-green-400 rounded-lg px-4 py-2 focus:border-green-500 transition" placeholder="Paste API Key here...">
                 </div>
+
                 <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 mt-2">
                     Connect to Cloud
                 </button>
@@ -48,13 +57,13 @@
     <div id="browser-ui" class="hidden flex-col h-full relative">
         
         <!-- Tab Bar -->
-        <div class="bg-gray-950 flex items-center px-2 pt-2 gap-1 border-b border-gray-800 overflow-x-auto custom-scrollbar" id="tab-container">
-            <!-- Tabs dynamically inject honge yahan -->
+        <div class="bg-gray-950 flex items-center px-2 pt-2 gap-1 border-b border-gray-800 overflow-x-auto" id="tab-container">
+            <!-- Tabs dynamically inject honge -->
             <button onclick="createNewTab()" class="hover:bg-gray-800 p-2 rounded-full text-gray-400 ml-1 transition" title="New Tab">
                 <i class="fa-solid fa-plus text-sm"></i>
             </button>
             <div class="ml-auto flex gap-3 pr-2">
-                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white transition p-2" title="API Settings"><i class="fa-solid fa-gear"></i></button>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white transition p-2" title="Settings & API"><i class="fa-solid fa-gear"></i></button>
             </div>
         </div>
 
@@ -78,7 +87,7 @@
 
         <!-- Loading Indicator -->
         <div id="loading" class="hidden bg-blue-600 text-xs text-center py-1 font-semibold tracking-wider animate-pulse z-10">
-            Rendering webpage securely...
+            Processing securely in cloud...
         </div>
 
         <!-- Webpage Render Area -->
@@ -90,32 +99,70 @@
             <img id="browser-screen" src="" class="max-w-full hidden shadow-2xl transition-opacity duration-200">
         </div>
 
-        <!-- Settings Modal (API Keys) -->
+        <!-- Settings Modal (Advanced) -->
         <div id="settings-modal" class="hidden absolute top-24 right-4 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-2xl w-80 z-50">
-            <h3 class="text-lg font-bold mb-3 border-b border-gray-700 pb-2">API Settings</h3>
-            <ul id="api-key-list" class="space-y-2 mb-3 text-sm text-gray-300 max-h-40 overflow-y-auto custom-scrollbar"></ul>
+            <h3 class="text-lg font-bold mb-3 border-b border-gray-700 pb-2">Settings & API</h3>
+            
+            <!-- Session Info -->
+            <div class="mb-4 bg-gray-900 p-2 rounded border border-gray-700">
+                <p class="text-xs text-gray-400 mb-1">Active Session ID:</p>
+                <div class="flex justify-between items-center text-sm font-mono text-blue-400">
+                    <span id="display-session-id" class="truncate w-56"></span>
+                    <button onclick="copyText(sessionId, 'sess-copy-icon')" class="text-gray-400 hover:text-white" title="Copy Session ID">
+                        <i id="sess-copy-icon" class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-400 mb-1">Your API Keys:</p>
+            <ul id="api-key-list" class="space-y-2 mb-3 text-sm text-gray-300 max-h-32 overflow-y-auto"></ul>
+            
             <button onclick="generateApiKey()" class="w-full bg-green-600 hover:bg-green-700 py-1.5 rounded text-sm mb-2 transition">Generate New API Key</button>
-            <button onclick="toggleSettings()" class="w-full bg-gray-700 hover:bg-gray-600 py-1.5 rounded text-sm transition">Close</button>
+            <div class="flex gap-2">
+                <button onclick="logout()" class="flex-1 bg-red-600 hover:bg-red-700 py-1.5 rounded text-sm transition">Logout</button>
+                <button onclick="toggleSettings()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-1.5 rounded text-sm transition">Close</button>
+            </div>
         </div>
     </div>
 
 <script>
-    // Aapka final API Link
+    // Apka Render API link
     const API_BASE = "https://browser-wcke.onrender.com/api"; 
     
     let apiKey = "";
     let sessionId = "";
-    
-    // Tab Memory Storage: Isme url aur screenshot save rahenge taki switch karne par memory loss na ho
-    let tabs = {}; 
+    let tabs = {}; // Memory Cache for Tabs
     let activeTabId = "";
 
-    async function login() {
+    // Auto-Login if API Key is saved in local storage
+    function checkAutoLogin() {
+        const savedKey = localStorage.getItem('lovora_api_key');
+        if (savedKey) {
+            apiKey = savedKey;
+            document.getElementById('api-key-input').value = savedKey;
+            login(true);
+        }
+    }
+
+    async function login(isAuto = false) {
         const u = document.getElementById('username').value;
         const p = document.getElementById('password').value;
+        const manualApiKey = document.getElementById('api-key-input').value;
+        
         document.getElementById('msg').innerText = "Connecting to Cloud Server...";
         
         try {
+            // API Bypass Logic
+            if (manualApiKey) {
+                apiKey = manualApiKey;
+                localStorage.setItem('lovora_api_key', apiKey); // Save for future
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('browser-ui').style.display = 'flex';
+                await startSession();
+                return;
+            }
+
+            // Standard Username/Password Logic
             const res = await fetch(`${API_BASE}/login`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: u, password: p })
@@ -123,23 +170,34 @@
             if (res.ok) {
                 const data = await res.json();
                 apiKey = data.api_key;
+                localStorage.setItem('lovora_api_key', apiKey); // Save for future
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('browser-ui').style.display = 'flex';
-                startSession();
+                await startSession();
             } else {
                 document.getElementById('msg').innerText = "Invalid User ID or Password!";
+                if(isAuto) logout(); // clear invalid saved key
             }
         } catch(e) { 
-            document.getElementById('msg').innerText = "Server Error or Server is waking up (Wait 1 min)."; 
+            document.getElementById('msg').innerText = "Server is waking up (Wait 1-2 mins) or Error."; 
         }
+    }
+
+    function logout() {
+        localStorage.removeItem('lovora_api_key');
+        location.reload();
     }
 
     async function startSession() {
         showLoading("Starting secure session...");
         try {
             const res = await fetch(`${API_BASE}/browser/start`, { method: 'POST', headers: { 'x-api-key': apiKey }});
+            if(!res.ok) throw new Error("Key might be invalid");
             const data = await res.json();
+            
             sessionId = data.session_id;
+            document.getElementById('display-session-id').innerText = sessionId;
+            
             addTabToUI(data.tab_id, data.url, data.screenshot);
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('browser-screen').style.display = 'block';
@@ -147,6 +205,9 @@
         } catch(e) {
             hideLoading();
             alert("Failed to start session. Server might be sleeping. Try again.");
+            if(document.getElementById('login-screen').style.display === 'none') {
+                logout(); // Reset if connection totally fails
+            }
         }
     }
 
@@ -162,25 +223,35 @@
 
     function addTabToUI(tabId, url, screenshot) {
         tabs[tabId] = { url: url, screenshot: screenshot };
-        activeTabId = tabId;
-        renderTabs();
-        updateScreen(); // Instantly show from memory
+        switchTab(tabId);
     }
 
+    // INSTANT TAB MEMORY LOGIC
     function switchTab(tabId) {
-        if (activeTabId === tabId) return; // Agar same tab par click kiya toh kuch mat karo
-        
         activeTabId = tabId;
         renderTabs();
-        updateScreen(); // Memory storage se turant UI update karo bina loading ke
         
-        // Background mein latest status get karo server se
-        browserAction('get', true); 
+        // Instantly load from JS Memory (No Reload, No Network Delay)
+        if(tabs[activeTabId]) {
+            document.getElementById('url').value = tabs[activeTabId].url;
+            if(tabs[activeTabId].screenshot) {
+                document.getElementById('browser-screen').src = tabs[activeTabId].screenshot;
+            }
+        }
+        
+        // Fetch background state silently just to be sure
+        fetch(`${API_BASE}/browser/${sessionId}/tabs/${activeTabId}/get`, {
+            method: 'POST', headers: { 'x-api-key': apiKey }
+        }).then(res => res.json()).then(data => {
+            if(data.screenshot) {
+                tabs[activeTabId].screenshot = data.screenshot;
+                if(activeTabId === tabId) document.getElementById('browser-screen').src = data.screenshot;
+            }
+        }).catch(e => console.log("Background sync failed"));
     }
 
     function renderTabs() {
         const container = document.getElementById('tab-container');
-        // Delete old tab buttons, keeping the '+' button
         Array.from(container.children).forEach(c => { 
             if(c.tagName !== 'BUTTON' || !c.innerHTML.includes('fa-plus')) c.remove(); 
         });
@@ -193,31 +264,15 @@
             tabEl.onclick = () => switchTab(tid);
             tabEl.innerHTML = `<i class="fa-solid fa-globe ${isActive ? 'text-blue-400' : 'text-gray-400'} text-xs"></i><span class="text-sm truncate w-24">Tab ${index}</span>`;
             
-            // Insert before the '+' button
             container.insertBefore(tabEl, container.lastElementChild.previousElementSibling);
             index++;
         });
     }
 
-    // Yeh function Tab ki memory se data lekar screen par turant dikhata hai
-    function updateScreen() {
-        const activeData = tabs[activeTabId];
-        if(activeData) {
-            document.getElementById('url').value = activeData.url;
-            if(activeData.screenshot) {
-                document.getElementById('browser-screen').src = activeData.screenshot;
-            }
-        }
-    }
-
     async function navigate() {
         let url = document.getElementById('url').value;
-        if(!url.startsWith('http')) {
-            url = 'https://' + url;
-            document.getElementById('url').value = url;
-        }
+        if(!url.startsWith('http')) { url = 'https://' + url; document.getElementById('url').value = url; }
         showLoading(`Loading ${url}...`);
-        
         try {
             const res = await fetch(`${API_BASE}/browser/${sessionId}/tabs/${activeTabId}/goto`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
@@ -227,14 +282,15 @@
         } catch(e) { hideLoading(); }
     }
 
-    async function browserAction(action, isBackground = false) {
-        if(!isBackground) showLoading(`${action}ing...`);
+    // Handles Back(Undo), Forward(Redo), Reload
+    async function browserAction(action) {
+        showLoading(`${action}ing...`);
         try {
             const res = await fetch(`${API_BASE}/browser/${sessionId}/tabs/${activeTabId}/${action}`, {
                 method: 'POST', headers: { 'x-api-key': apiKey }
             });
             updateTabData(await res.json());
-        } catch(e) { if(!isBackground) hideLoading(); }
+        } catch(e) { hideLoading(); }
     }
 
     function goHome() {
@@ -246,7 +302,10 @@
         if(data && activeTabId && tabs[activeTabId]) {
             if(data.url) tabs[activeTabId].url = data.url;
             if(data.screenshot) tabs[activeTabId].screenshot = data.screenshot;
-            updateScreen(); // Update memory cache securely
+            
+            // Instantly update UI
+            document.getElementById('url').value = tabs[activeTabId].url;
+            document.getElementById('browser-screen').src = tabs[activeTabId].screenshot;
         }
         hideLoading();
     }
@@ -254,12 +313,21 @@
     function showLoading(text) {
         document.getElementById('loading').style.display = 'block';
         document.getElementById('loading').innerText = text;
-        document.getElementById('browser-screen').style.opacity = '0.4';
+        document.getElementById('browser-screen').style.opacity = '0.5';
     }
 
     function hideLoading() {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('browser-screen').style.opacity = '1';
+    }
+
+    // --- COPY LOGIC ---
+    function copyText(text, iconId) {
+        navigator.clipboard.writeText(text).then(() => {
+            const icon = document.getElementById(iconId);
+            icon.className = "fa-solid fa-check text-green-400";
+            setTimeout(() => { icon.className = "fa-regular fa-copy"; }, 2000);
+        });
     }
 
     // --- API Settings Logic ---
@@ -274,17 +342,23 @@
     }
 
     async function loadApiKeys() {
-        const res = await fetch(`${API_BASE}/settings/keys`, { headers: { 'x-api-key': apiKey }});
-        const data = await res.json();
-        const list = document.getElementById('api-key-list');
-        list.innerHTML = '';
-        data.keys.forEach(k => {
-            const isCurrent = k === apiKey ? '<span class="text-xs text-green-400 border border-green-500 px-1 rounded ml-1">Active</span>' : '';
-            list.innerHTML += `<li class="flex justify-between items-center bg-gray-900 p-2 rounded mb-1 border border-gray-700">
-                <span class="truncate w-40" title="${k}">${k} ${isCurrent}</span>
-                <i class="fa-solid fa-trash text-red-500 cursor-pointer hover:text-red-400 p-1" onclick="deleteApiKey('${k}')"></i>
-            </li>`;
-        });
+        try {
+            const res = await fetch(`${API_BASE}/settings/keys`, { headers: { 'x-api-key': apiKey }});
+            const data = await res.json();
+            const list = document.getElementById('api-key-list');
+            list.innerHTML = '';
+            data.keys.forEach((k, index) => {
+                const isCurrent = k === apiKey ? '<span class="text-[10px] text-green-400 border border-green-500 px-1 rounded ml-1">Active</span>' : '';
+                const iconId = `api-copy-${index}`;
+                list.innerHTML += `<li class="flex justify-between items-center bg-gray-900 p-2 rounded mb-1 border border-gray-700">
+                    <span class="truncate w-36" title="${k}">${k} ${isCurrent}</span>
+                    <div class="flex gap-3">
+                        <i id="${iconId}" class="fa-regular fa-copy text-blue-400 cursor-pointer hover:text-blue-300" onclick="copyText('${k}', '${iconId}')" title="Copy API Key"></i>
+                        <i class="fa-solid fa-trash text-red-500 cursor-pointer hover:text-red-400" onclick="deleteApiKey('${k}')" title="Delete Key"></i>
+                    </div>
+                </li>`;
+            });
+        } catch(e) { console.log("Could not load API keys"); }
     }
 
     async function generateApiKey() {
@@ -300,19 +374,15 @@
         }
     }
     
-    // Enter key dabane par navigate karna
     document.getElementById('url').addEventListener('keypress', e => { 
         if (e.key === 'Enter') navigate(); 
     });
 
-    // --- BACKGROUND PING LOGIC (To keep server awake) ---
-    // Yeh har 1 minute (60000ms) mein background request bhejega taki server sleep na ho
+    // BACKGROUND PING (To keep server awake)
     setInterval(() => {
-        if (sessionId) { // Sirf tab ping kare jab session active ho
+        if (sessionId) { 
             const pingUrl = API_BASE.replace('/api', '/');
-            fetch(pingUrl, { mode: 'no-cors' })
-                .then(() => console.log("Background ping sent successfully to prevent server sleep."))
-                .catch(() => console.log("Ping failed."));
+            fetch(pingUrl, { mode: 'no-cors' }).catch(() => {});
         }
     }, 60000); 
 
