@@ -5,10 +5,10 @@ from playwright.async_api import async_playwright
 import os
 import uuid
 import base64
-import json
 
 app = FastAPI(title="Lovora Cloud Browser API")
 
+# CORS setup for frontend connection
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,12 +17,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage (For production, use PostgreSQL)
+# In-memory storage (For production, you can use PostgreSQL later)
 USER_DATA_DIR = "./browser_profiles"
 os.makedirs(USER_DATA_DIR, exist_ok=True)
 
 ACTIVE_SESSIONS = {}
-VALID_API_KEYS = {"lovora_admin_key_123": "admin"}
+VALID_API_KEYS = {"lovora@855524558248": "admin"}
 
 class LoginRequest(BaseModel):
     username: str
@@ -38,6 +38,7 @@ def verify_api_key(x_api_key: str = Header(...)):
 
 async def capture_screenshot(page):
     try:
+        # Taking screenshot
         screenshot_bytes = await page.screenshot(timeout=10000)
         b64_image = base64.b64encode(screenshot_bytes).decode('utf-8')
         return f"data:image/png;base64,{b64_image}"
@@ -57,9 +58,18 @@ async def start_browser(username: str = Depends(verify_api_key)):
     profile_path = os.path.join(USER_DATA_DIR, username)
     
     playwright = await async_playwright().start()
+    
+    # LOW RAM MODE: Added arguments to prevent crash on Render free tier
     context = await playwright.chromium.launch_persistent_context(
-        user_data_dir=profile_path, headless=True,
-        args=["--no-sandbox", "--disable-dev-shm-usage"]
+        user_data_dir=profile_path, 
+        headless=True,
+        args=[
+            "--no-sandbox", 
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--single-process"
+        ]
     )
     
     # Open first default tab
@@ -110,7 +120,7 @@ async def tab_actions(session_id: str, tab_id: str, action: str, username: str =
     elif action == "reload":
         await page.reload(wait_until="domcontentloaded", timeout=60000)
     elif action == "get":
-        pass # Just return current state
+        pass # Just return current state for background update
         
     screenshot = await capture_screenshot(page)
     return {"url": page.url, "screenshot": screenshot}
