@@ -189,10 +189,12 @@
     }
 
     async function startSession() {
-        showLoading("Starting secure session...");
+        showLoading("Starting secure session... (Free server may take 1-2 mins)");
         try {
+            // Added timeout logic warning for free tier
             const res = await fetch(`${API_BASE}/browser/start`, { method: 'POST', headers: { 'x-api-key': apiKey }});
-            if(!res.ok) throw new Error("Key might be invalid");
+            if(!res.ok) throw new Error("Connection Timeout or Invalid Key");
+            
             const data = await res.json();
             
             sessionId = data.session_id;
@@ -204,10 +206,8 @@
             hideLoading();
         } catch(e) {
             hideLoading();
-            alert("Failed to start session. Server might be sleeping. Try again.");
-            if(document.getElementById('login-screen').style.display === 'none') {
-                logout(); // Reset if connection totally fails
-            }
+            // Yahan se auto-logout hata diya gaya hai!
+            alert("Browser start hone mein time lag raha hai (Server limits). Kripya 30 second wait karein aur wapas 'Connect to Cloud' par click karein ya page refresh karein.");
         }
     }
 
