@@ -1,18 +1,11 @@
-# Lightweight Python base image
-FROM python:3.10-slim
+# Base image with full Firefox and noVNC Web UI
+FROM lscr.io/linuxserver/firefox:latest
 
-# Server mein folder set karein
-WORKDIR /app
+# Server configurations and timezone
+ENV PUID=1000
+ENV PGID=1000
+ENV TZ=Asia/Kolkata
+ENV TITLE="My Cloud Browser"
 
-# Requirements file copy karke packages install karein
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Aapka saara code (app.py, templates, static) server par copy karein
-COPY . .
-
-# Browser app 8080 port par chalegi, usko expose karein
-EXPOSE 8080
-
-# App start karne ki command
-CMD ["python", "app.py"]
+# Expose the default HTTP port for the web interface
+EXPOSE 3000
