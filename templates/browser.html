@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Virtual Browser</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="browser-container">
+        <div class="browser-header">
+            <div class="tabs-container" id="tabs-container"></div>
+            <button class="add-tab-btn" onclick="addTab()">+</button>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+        <div class="address-bar">
+            <button onclick="refreshFrame()">↻</button>
+            <input type="text" id="url-input" placeholder="Enter URL (e.g., https://bing.com)" onkeypress="handleUrlEnter(event)">
+            <button onclick="loadUrl()">Go</button>
+        </div>
+        <div class="viewport-container" id="viewport-container"></div>
+    </div>
+
+    <script>
+        const initialTabs = {{ tabs_data | safe }};
+        let activeTabId = "{{ active_tab }}";
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
