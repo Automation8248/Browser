@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# User data (NEVER commit)
+storage/profiles/*
+storage/downloads/*
+!storage/profiles/.gitkeep
+!storage/downloads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Build / temp
+dist/
+build/
+tmp/
+.cache/
