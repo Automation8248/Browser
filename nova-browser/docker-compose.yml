@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  nova-server:
+    build: .
+    container_name: nova-server
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - CHROMIUM_URL=ws://nova-chromium:9222
+      - PROFILES_PATH=/data/profiles
+      - DOWNLOADS_PATH=/data/downloads
+      - MAX_TABS=${MAX_TABS:-20}
+      - EPHEMERAL=${EPHEMERAL:-false}
+      - ADMIN_USER=${ADMIN_USER}
+      - ADMIN_PASS_HASH=${ADMIN_PASS_HASH}
+      - OUTBOUND_PROXY=${OUTBOUND_PROXY}
+    volumes:
+      - ./storage/profiles:/data/profiles
+      - ./storage/downloads:/data/downloads
+    depends_on:
+      - nova-chromium
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+    restart: unless-stopped
+
+  nova-chromium:
+    image: lscr.io/linuxserver/chromium:latest
+    container_name: nova-chromium
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - CUSTOM_USER=nova
+      - PASSWORD=${CHROMIUM_PASSWORD}
+      - CHROME_CLI=--no-first-run --disable-dev-shm-usage --remote-debugging-port=9222 --remote-debugging-address=0.0.0.0
+    volumes:
+      - ./storage/profiles:/config
+      - ./storage/downloads:/downloads
+    shm_size: "1gb"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3G
+    security_opt:
+      - seccomp:unconfined
+    restart: unless-stopped
